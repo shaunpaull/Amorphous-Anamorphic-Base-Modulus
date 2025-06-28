@@ -1,0 +1,850 @@
+"""
+Amorphous Mathematics Library
+
+A Python library implementing amorphous and anamorphous arithmetic operations
+that introduce controlled fluidity and unpredictability to mathematical functions.
+
+Author: Shaun Paul
+License: MIT
+Version: 1.0.0
+"""
+
+import numpy as np
+import random
+from typing import Union, Optional, Tuple, List
+from abc import ABC, abstractmethod
+import warnings
+
+
+class AmorphousConfig:
+    """Configuration class for amorphous arithmetic operations."""
+    
+    def __init__(self, 
+                 default_fluidity: float = 0.1,
+                 min_base: float = 1.1,
+                 max_iterations: int = 1000,
+                 precision_threshold: float = 1e-10):
+        """
+        Initialize configuration for amorphous operations.
+        
+        Args:
+            default_fluidity: Default fluidity parameter (0.0 to 1.0)
+            min_base: Minimum allowed base value
+            max_iterations: Maximum iterations for convergence
+            precision_threshold: Precision threshold for calculations
+        """
+        self.default_fluidity = self._validate_fluidity(default_fluidity)
+        self.min_base = min_base
+        self.max_iterations = max_iterations
+        self.precision_threshold = precision_threshold
+    
+    @staticmethod
+    def _validate_fluidity(fluidity: float) -> float:
+        """Validate and clamp fluidity parameter."""
+        if not 0.0 <= fluidity <= 1.0:
+            warnings.warn(f"Fluidity {fluidity} outside [0,1], clamping to valid range")
+            return max(0.0, min(1.0, fluidity))
+        return fluidity
+
+
+class BaseAmorphousOperator(ABC):
+    """Abstract base class for amorphous mathematical operators."""
+    
+    def __init__(self, config: Optional[AmorphousConfig] = None, seed: Optional[int] = None):
+        """
+        Initialize base amorphous operator.
+        
+        Args:
+            config: Configuration object for amorphous operations
+            seed: Random seed for reproducible randomness (None for true randomness)
+        """
+        self.config = config or AmorphousConfig()
+        self._setup_random_state(seed)
+        self._operation_history = []
+    
+    def _setup_random_state(self, seed: Optional[int]) -> None:
+        """Setup random state for consistent behavior."""
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            self._random_state = np.random.RandomState(seed)
+        else:
+            self._random_state = np.random.RandomState()
+    
+    def _log_operation(self, operation: str, inputs: dict, result: float) -> None:
+        """Log operation for debugging and analysis."""
+        self._operation_history.append({
+            'operation': operation,
+            'inputs': inputs.copy(),
+            'result': result,
+            'timestamp': len(self._operation_history)
+        })
+    
+    def get_operation_history(self) -> List[dict]:
+        """Get history of all operations performed."""
+        return self._operation_history.copy()
+    
+    def clear_history(self) -> None:
+        """Clear operation history."""
+        self._operation_history.clear()
+
+
+class AmorphousArithmetic(BaseAmorphousOperator):
+    """
+    Implementation of amorphous arithmetic operations.
+    
+    Amorphous arithmetic introduces controlled fluidity and variation
+    to traditional mathematical operations, creating operations that
+    maintain mathematical coherence while introducing organic variability.
+    """
+    
+    def amorphous_base(self, 
+                      value: Union[float, int], 
+                      base: Union[float, int], 
+                      fluidity: Optional[float] = None) -> float:
+        """
+        Compute amorphous base conversion with variable base.
+        
+        The amorphous base operation performs logarithmic conversion with a base
+        that fluctuates according to the fluidity parameter, introducing
+        controlled variation while maintaining mathematical validity.
+        
+        Args:
+            value: Input value to convert
+            base: Nominal base for conversion
+            fluidity: Amount of variation in the base (0-1, None uses default)
+            
+        Returns:
+            Amorphous base conversion result
+            
+        Raises:
+            ValueError: If base <= 1 or value is invalid
+            
+        Examples:
+            >>> calc = AmorphousArithmetic()
+            >>> result = calc.amorphous_base(100, 10, 0.1)  # ~2.0 with variation
+            >>> print(f"log₁₀(100) ≈ {result}")
+        """
+        if base <= 1:
+            raise ValueError(f"Base must be > 1, got {base}")
+        
+        if value == 0:
+            return 0.0
+        
+        fluidity = fluidity if fluidity is not None else self.config.default_fluidity
+        fluidity = self.config._validate_fluidity(fluidity)
+        
+        # Generate amorphous variation in base
+        base_variation = self._random_state.normal(0, fluidity * base)
+        effective_base = max(self.config.min_base, base + base_variation)
+        
+        # Compute amorphous base conversion
+        try:
+            if value > 0:
+                result = np.log(value) / np.log(effective_base)
+            else:
+                result = -np.log(abs(value)) / np.log(effective_base)
+        except (ValueError, ZeroDivisionError) as e:
+            raise ValueError(f"Invalid computation: {e}")
+        
+        # Log operation
+        self._log_operation('amorphous_base', {
+            'value': value, 'base': base, 'fluidity': fluidity,
+            'effective_base': effective_base
+        }, result)
+        
+        return result
+    
+    def amorphous_modulus(self, 
+                         dividend: Union[float, int], 
+                         divisor: Union[float, int], 
+                         fluidity: Optional[float] = None) -> float:
+        """
+        Compute amorphous modulus operation with variable divisor.
+        
+        The amorphous modulus operation performs modular arithmetic with a divisor
+        that varies according to the fluidity parameter, and applies smoothing
+        functions to create organic, continuous behavior.
+        
+        Args:
+            dividend: Value to be divided
+            divisor: Nominal divisor
+            fluidity: Amount of variation in the divisor (0-1, None uses default)
+            
+        Returns:
+            Amorphous modulus result
+            
+        Raises:
+            ValueError: If divisor is 0
+            
+        Examples:
+            >>> calc = AmorphousArithmetic()
+            >>> result = calc.amorphous_modulus(17, 5, 0.1)  # ~2 with variation
+            >>> print(f"17 mod 5 ≈ {result}")
+        """
+        if divisor == 0:
+            raise ValueError("Divisor cannot be zero")
+        
+        fluidity = fluidity if fluidity is not None else self.config.default_fluidity
+        fluidity = self.config._validate_fluidity(fluidity)
+        
+        # Generate amorphous variation in divisor
+        divisor_variation = self._random_state.normal(0, fluidity * abs(divisor))
+        effective_divisor = divisor + divisor_variation
+        
+        # Ensure divisor doesn't become zero
+        if abs(effective_divisor) < self.config.precision_threshold:
+            effective_divisor = np.sign(divisor) * self.config.precision_threshold
+        
+        # Compute base modulus
+        quotient = dividend / effective_divisor
+        integer_part = int(quotient)
+        fractional_part = quotient - integer_part
+        
+        # Apply amorphous smoothing function
+        smoothing_factor = 1 + fluidity * np.sin(quotient * np.pi)
+        
+        # Compute final result
+        result = (fractional_part * effective_divisor) * smoothing_factor
+        
+        # Log operation
+        self._log_operation('amorphous_modulus', {
+            'dividend': dividend, 'divisor': divisor, 'fluidity': fluidity,
+            'effective_divisor': effective_divisor, 'smoothing_factor': smoothing_factor
+        }, result)
+        
+        return result
+    
+    def anamorphous_amorphous_base(self, 
+                                  value: Union[float, int], 
+                                  base: Union[float, int], 
+                                  fluidity: Optional[float] = None,
+                                  distortion_factor: float = 0.5) -> float:
+        """
+        Compute anamorphous amorphous base - inverse transformation with distortion.
+        
+        The anamorphous amorphous base applies the amorphous base transformation
+        followed by an inverse-like operation with additional distortion, creating
+        complex non-linear transformations suitable for artistic and security applications.
+        
+        Args:
+            value: Input value to transform
+            base: Base for the transformation
+            fluidity: Amount of variation (0-1, None uses default)
+            distortion_factor: Additional distortion magnitude (0-1)
+            
+        Returns:
+            Anamorphous amorphous base result
+            
+        Examples:
+            >>> calc = AmorphousArithmetic()
+            >>> result = calc.anamorphous_amorphous_base(50, 10, 0.1, 0.3)
+            >>> print(f"Anamorphous transform: {result}")
+        """
+        fluidity = fluidity if fluidity is not None else self.config.default_fluidity
+        fluidity = self.config._validate_fluidity(fluidity)
+        distortion_factor = max(0.0, min(1.0, distortion_factor))
+        
+        # First apply amorphous base transformation
+        amorphous_result = self.amorphous_base(value, base, fluidity)
+        
+        # Apply anamorphic distortion
+        distortion = self._random_state.normal(1, fluidity * distortion_factor)
+        
+        # Inverse-like transformation with distortion
+        try:
+            if base > 0 and amorphous_result is not None:
+                anamorphic_factor = np.power(base, amorphous_result * distortion)
+            else:
+                anamorphic_factor = amorphous_result * distortion
+        except (OverflowError, ValueError):
+            # Handle numerical overflow gracefully
+            anamorphic_factor = np.sign(amorphous_result) * 1e6
+        
+        # Log operation
+        self._log_operation('anamorphous_amorphous_base', {
+            'value': value, 'base': base, 'fluidity': fluidity,
+            'distortion_factor': distortion_factor, 'amorphous_result': amorphous_result
+        }, anamorphic_factor)
+        
+        return anamorphic_factor
+    
+    def anamorphous_amorphous_modulus(self, 
+                                     dividend: Union[float, int], 
+                                     divisor: Union[float, int], 
+                                     fluidity: Optional[float] = None,
+                                     reconstruction_factor: float = 0.3) -> float:
+        """
+        Compute anamorphous amorphous modulus - inverse modulus with reconstruction.
+        
+        The anamorphous amorphous modulus applies the amorphous modulus operation
+        followed by a reconstruction process with distortion, creating complex
+        transformations that resist pattern analysis.
+        
+        Args:
+            dividend: Value to be processed
+            divisor: Divisor for the operation
+            fluidity: Amount of variation (0-1, None uses default)
+            reconstruction_factor: Reconstruction distortion magnitude (0-1)
+            
+        Returns:
+            Anamorphous amorphous modulus result
+            
+        Examples:
+            >>> calc = AmorphousArithmetic()
+            >>> result = calc.anamorphous_amorphous_modulus(23, 7, 0.1, 0.2)
+            >>> print(f"Anamorphous modulus: {result}")
+        """
+        fluidity = fluidity if fluidity is not None else self.config.default_fluidity
+        fluidity = self.config._validate_fluidity(fluidity)
+        reconstruction_factor = max(0.0, min(1.0, reconstruction_factor))
+        
+        # First apply amorphous modulus
+        amorphous_result = self.amorphous_modulus(dividend, divisor, fluidity)
+        
+        # Apply anamorphic reconstruction with distortion
+        distortion = self._random_state.normal(1, fluidity * reconstruction_factor)
+        
+        # Reconstruct approximate original with distortion
+        if divisor != 0:
+            quotient = int(dividend / divisor)
+            reconstruction = quotient * divisor + amorphous_result * distortion
+        else:
+            reconstruction = amorphous_result * distortion
+        
+        # Log operation
+        self._log_operation('anamorphous_amorphous_modulus', {
+            'dividend': dividend, 'divisor': divisor, 'fluidity': fluidity,
+            'reconstruction_factor': reconstruction_factor, 'amorphous_result': amorphous_result
+        }, reconstruction)
+        
+        return reconstruction
+
+
+class AmorphousFunctionSuite:
+    """
+    High-level interface for amorphous mathematical operations.
+    
+    Provides convenient access to all amorphous arithmetic functions
+    with consistent configuration and state management.
+    """
+    
+    def __init__(self, 
+                 config: Optional[AmorphousConfig] = None, 
+                 seed: Optional[int] = None):
+        """
+        Initialize amorphous function suite.
+        
+        Args:
+            config: Configuration for amorphous operations
+            seed: Random seed for reproducible behavior
+        """
+        self.arithmetic = AmorphousArithmetic(config, seed)
+        self.config = self.arithmetic.config
+    
+    def base_transform(self, value: float, base: float = 10, fluidity: float = 0.1) -> float:
+        """Convenient wrapper for amorphous base transformation."""
+        return self.arithmetic.amorphous_base(value, base, fluidity)
+    
+    def modulus_transform(self, dividend: float, divisor: float, fluidity: float = 0.1) -> float:
+        """Convenient wrapper for amorphous modulus operation."""
+        return self.arithmetic.amorphous_modulus(dividend, divisor, fluidity)
+    
+    def anamorphic_base_transform(self, value: float, base: float = 10, 
+                                 fluidity: float = 0.1, distortion: float = 0.5) -> float:
+        """Convenient wrapper for anamorphous base transformation."""
+        return self.arithmetic.anamorphous_amorphous_base(value, base, fluidity, distortion)
+    
+    def anamorphic_modulus_transform(self, dividend: float, divisor: float, 
+                                   fluidity: float = 0.1, reconstruction: float = 0.3) -> float:
+        """Convenient wrapper for anamorphous modulus operation."""
+        return self.arithmetic.anamorphous_amorphous_modulus(dividend, divisor, fluidity, reconstruction)
+    
+    def batch_transform(self, values: List[float], operation: str, **kwargs) -> List[float]:
+        """
+        Apply amorphous transformations to a batch of values.
+        
+        Args:
+            values: List of input values
+            operation: Operation type ('base', 'modulus', 'anamorphic_base', 'anamorphic_modulus')
+            **kwargs: Additional arguments for the operation
+            
+        Returns:
+            List of transformed values
+        """
+        operation_map = {
+            'base': self.base_transform,
+            'modulus': self.modulus_transform,
+            'anamorphic_base': self.anamorphic_base_transform,
+            'anamorphic_modulus': self.anamorphic_modulus_transform
+        }
+        
+        if operation not in operation_map:
+            raise ValueError(f"Unknown operation: {operation}")
+        
+        transform_func = operation_map[operation]
+        return [transform_func(value, **kwargs) for value in values]
+    
+    def get_statistics(self) -> dict:
+        """Get statistics about performed operations."""
+        history = self.arithmetic.get_operation_history()
+        
+        if not history:
+            return {'total_operations': 0}
+        
+        operations = [op['operation'] for op in history]
+        results = [op['result'] for op in history]
+        
+        return {
+            'total_operations': len(history),
+            'operation_types': {op: operations.count(op) for op in set(operations)},
+            'result_statistics': {
+                'mean': np.mean(results),
+                'std': np.std(results),
+                'min': np.min(results),
+                'max': np.max(results)
+            }
+        }
+
+
+# Convenience functions for direct use
+def amorphous_base(value: float, base: float = 10, fluidity: float = 0.1, 
+                  seed: Optional[int] = None) -> float:
+    """
+    Direct amorphous base transformation function.
+    
+    Args:
+        value: Input value
+        base: Base for transformation
+        fluidity: Variation amount (0-1)
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Transformed value
+    """
+    calc = AmorphousArithmetic(seed=seed)
+    return calc.amorphous_base(value, base, fluidity)
+
+
+def amorphous_modulus(dividend: float, divisor: float, fluidity: float = 0.1, 
+                     seed: Optional[int] = None) -> float:
+    """
+    Direct amorphous modulus operation function.
+    
+    Args:
+        dividend: Dividend value
+        divisor: Divisor value
+        fluidity: Variation amount (0-1)
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Modulus result
+    """
+    calc = AmorphousArithmetic(seed=seed)
+    return calc.amorphous_modulus(dividend, divisor, fluidity)
+
+
+def anamorphous_base(value: float, base: float = 10, fluidity: float = 0.1, 
+                    distortion: float = 0.5, seed: Optional[int] = None) -> float:
+    """
+    Direct anamorphous base transformation function.
+    
+    Args:
+        value: Input value
+        base: Base for transformation
+        fluidity: Variation amount (0-1)
+        distortion: Distortion factor (0-1)
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Transformed value
+    """
+    calc = AmorphousArithmetic(seed=seed)
+    return calc.anamorphous_amorphous_base(value, base, fluidity, distortion)
+
+
+def anamorphous_modulus(dividend: float, divisor: float, fluidity: float = 0.1, 
+                       reconstruction: float = 0.3, seed: Optional[int] = None) -> float:
+    """
+    Direct anamorphous modulus operation function.
+    
+    Args:
+        dividend: Dividend value
+        divisor: Divisor value
+        fluidity: Variation amount (0-1)
+        reconstruction: Reconstruction factor (0-1)
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Modulus result
+    """
+    calc = AmorphousArithmetic(seed=seed)
+    return calc.anamorphous_amorphous_modulus(dividend, divisor, fluidity, reconstruction)
+
+
+
+
+
+
+
+
+
+
+
+"""
+Examples and Demonstrations for Amorphous Mathematics Library
+
+This file contains comprehensive examples showing how to use the amorphous
+mathematics library for various applications including cryptography,
+simulation, artistic generation, and security.
+
+Author: GitHub User
+Version: 1.0.0
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import List, Tuple
+
+# Assuming the first code block is saved as amorphous_math.py
+from amorphous_math import (
+    AmorphousArithmetic, AmorphousFunctionSuite, AmorphousConfig,
+    amorphous_base, amorphous_modulus, anamorphous_base, anamorphous_modulus
+)
+
+
+def basic_usage_examples():
+    """Demonstrate basic usage of amorphous functions."""
+    print("=== BASIC USAGE EXAMPLES ===")
+    print()
+    
+    # Example 1: Direct function calls
+    print("1. Direct Function Calls:")
+    print("-" * 30)
+    
+    value = 100
+    base = 10
+    fluidity = 0.1
+    
+    # Standard vs Amorphous base
+    standard_result = np.log10(value)
+    amorphous_result = amorphous_base(value, base, fluidity, seed=42)
+    anamorphous_result = anamorphous_base(value, base, fluidity, seed=42)
+    
+    print(f"Standard log₁₀({value}) = {standard_result:.6f}")
+    print(f"Amorphous base({value}, {base}) = {amorphous_result:.6f}")
+    print(f"Anamorphous base({value}, {base}) = {anamorphous_result:.6f}")
+    print()
+    
+    # Standard vs Amorphous modulus
+    dividend = 23
+    divisor = 7
+    
+    standard_mod = dividend % divisor
+    amorphous_mod = amorphous_modulus(dividend, divisor, fluidity, seed=42)
+    anamorphous_mod = anamorphous_modulus(dividend, divisor, fluidity, seed=42)
+    
+    print(f"Standard {dividend} % {divisor} = {standard_mod}")
+    print(f"Amorphous modulus({dividend}, {divisor}) = {amorphous_mod:.6f}")
+    print(f"Anamorphous modulus({dividend}, {divisor}) = {anamorphous_mod:.6f}")
+    print()
+    
+    # Example 2: Using the AmorphousArithmetic class
+    print("2. Using AmorphousArithmetic Class:")
+    print("-" * 35)
+    
+    calc = AmorphousArithmetic(seed=42)
+    
+    # Multiple operations with same calculator
+    values = [10, 25, 50, 100]
+    print("Value | Amorphous Base | Anamorphous Base")
+    print("-" * 45)
+    for val in values:
+        amp_base = calc.amorphous_base(val, 10, 0.1)
+        ana_base = calc.anamorphous_amorphous_base(val, 10, 0.1)
+        print(f"{val:5} | {amp_base:13.6f} | {ana_base:15.6f}")
+    print()
+    
+    # Example 3: Using AmorphousFunctionSuite
+    print("3. Using AmorphousFunctionSuite (High-level Interface):")
+    print("-" * 55)
+    
+    suite = AmorphousFunctionSuite(seed=42)
+    
+    # Batch processing
+    test_values = [5, 15, 25, 35, 45]
+    base_results = suite.batch_transform(test_values, 'base', base=10, fluidity=0.2)
+    mod_results = suite.batch_transform(test_values, 'modulus', divisor=7, fluidity=0.15)
+    
+    print("Batch Base Transformations:")
+    for i, (val, result) in enumerate(zip(test_values, base_results)):
+        print(f"  {val} → {result:.6f}")
+    
+    print("\nBatch Modulus Transformations:")
+    for i, (val, result) in enumerate(zip(test_values, mod_results)):
+        print(f"  {val} % 7 → {result:.6f}")
+    
+    # Get statistics
+    stats = suite.get_statistics()
+    print(f"\nOperations performed: {stats['total_operations']}")
+    print(f"Operation types: {stats['operation_types']}")
+
+
+def cryptographic_applications():
+    """Demonstrate cryptographic applications of amorphous functions."""
+    print("\n=== CRYPTOGRAPHIC APPLICATIONS ===")
+    print()
+    
+    class AmorphousCrypto:
+        def __init__(self, seed=None):
+            self.calc = AmorphousArithmetic(seed=seed)
+        
+        def generate_key_schedule(self, master_key: int, rounds: int = 16) -> List[int]:
+            """Generate encryption round keys using amorphous operations."""
+            keys = []
+            current_key = master_key
+            
+            for round_num in range(rounds):
+                # Use anamorphous base for non-linear key evolution
+                key_transform = self.calc.anamorphous_amorphous_base(
+                    current_key + round_num, 
+                    7, 
+                    fluidity=0.2,
+                    distortion_factor=0.3
+                )
+                
+                # Apply amorphous modulus to create bounded key
+                round_key = int(abs(self.calc.amorphous_modulus(
+                    key_transform * 1000, 
+                    2**16, 
+                    fluidity=0.15
+                ))) % (2**16)
+                
+                keys.append(round_key)
+                current_key = round_key
+            
+            return keys
+        
+        def obfuscate_data(self, data: List[int]) -> List[int]:
+            """Obfuscate data using amorphous transformations."""
+            obfuscated = []
+            
+            for i, byte_val in enumerate(data):
+                # Apply amorphous base transformation
+                transform1 = self.calc.amorphous_base(byte_val + 1, 5, fluidity=0.25)
+                
+                # Apply anamorphous modulus for additional mixing
+                transform2 = self.calc.anamorphous_amorphous_modulus(
+                    transform1 * 100, 
+                    256, 
+                    fluidity=0.2
+                )
+                
+                obfuscated_byte = int(abs(transform2)) % 256
+                obfuscated.append(obfuscated_byte)
+            
+            return obfuscated
+    
+    # Demonstration
+    crypto = AmorphousCrypto(seed=42)
+    
+    print("1. Key Schedule Generation:")
+    print("-" * 28)
+    master_key = 0x1234
+    key_schedule = crypto.generate_key_schedule(master_key, 8)
+    
+    print(f"Master Key: 0x{master_key:04X}")
+    print("Round Keys:")
+    for i, key in enumerate(key_schedule):
+        print(f"  Round {i+1:2}: 0x{key:04X} ({key})")
+    print()
+    
+    print("2. Data Obfuscation:")
+    print("-" * 20)
+    original_data = [72, 101, 108, 108, 111]  # "Hello" in ASCII
+    obfuscated_data = crypto.obfuscate_data(original_data)
+    
+    print("Original: ", original_data)
+    print("Obfuscated:", obfuscated_data)
+    
+    # Show that same input produces different output (due to state changes)
+    obfuscated_again = crypto.obfuscate_data(original_data)
+    print("Again:    ", obfuscated_again)
+    print(f"Different outputs: {obfuscated_data != obfuscated_again}")
+
+
+def scientific_simulation():
+    """Demonstrate scientific simulation applications."""
+    print("\n=== SCIENTIFIC SIMULATION APPLICATIONS ===")
+    print()
+    
+    class NaturalPhenomena:
+        def __init__(self, seed=None):
+            self.calc = AmorphousArithmetic(seed=seed)
+        
+        def simulate_brownian_motion(self, steps: int = 100, 
+                                   dt: float = 0.01) -> Tuple[List[float], List[float]]:
+            """Simulate 2D Brownian motion using amorphous functions."""
+            x_positions = [0.0]
+            y_positions = [0.0]
+            
+            x, y = 0.0, 0.0
+            
+            for step in range(steps):
+                # Use amorphous modulus for random-like steps
+                dx_raw = self.calc.amorphous_modulus(x * 100 + step, 10, fluidity=0.3)
+                dy_raw = self.calc.amorphous_modulus(y * 100 + step + 50, 10, fluidity=0.3)
+                
+                # Convert to displacement
+                dx = (dx_raw - 5) * dt  # Center around 0
+                dy = (dy_raw - 5) * dt
+                
+                x += dx
+                y += dy
+                
+                x_positions.append(x)
+                y_positions.append(y)
+            
+            return x_positions, y_positions
+        
+        def simulate_population_dynamics(self, initial_pop: float, 
+                                       generations: int = 50) -> List[float]:
+            """Simulate population dynamics with environmental fluctuations."""
+            populations = [initial_pop]
+            current_pop = initial_pop
+            
+            for gen in range(generations):
+                # Base growth rate
+                growth_rate = 1.1
+                
+                # Environmental fluctuation using anamorphous base
+                env_factor = self.calc.anamorphous_amorphous_base(
+                    current_pop + gen, 
+                    2, 
+                    fluidity=0.2,
+                    distortion_factor=0.4
+                )
+                
+                # Apply carrying capacity using amorphous modulus
+                carrying_capacity = 1000
+                capacity_effect = self.calc.amorphous_modulus(
+                    current_pop, 
+                    carrying_capacity, 
+                    fluidity=0.1
+                ) / carrying_capacity
+                
+                # Calculate next population, clamping to avoid explosion
+                growth_modifier = min(max(env_factor / 100, 0.5), 1.5)
+                next_pop = current_pop * growth_rate * (1 - capacity_effect) * growth_modifier
+                next_pop = max(0, next_pop)  # Population can't be negative
+                
+                populations.append(next_pop)
+                current_pop = next_pop
+            
+            return populations
+    
+    # Demonstration
+    sim = NaturalPhenomena(seed=42)
+    
+    print("1. Brownian Motion Simulation:")
+    print("-" * 32)
+    x_path, y_path = sim.simulate_brownian_motion(100, dt=0.1)
+    
+    print("Plotting Brownian motion... (see plot window)")
+    plt.figure(figsize=(8, 8))
+    plt.plot(x_path, y_path, marker='o', linestyle='-', markersize=3, alpha=0.7)
+    plt.title("Amorphous Brownian Motion")
+    plt.xlabel("X Position")
+    plt.ylabel("Y Position")
+    plt.grid(True)
+    plt.show()
+    print()
+
+    print("2. Population Dynamics:")
+    print("-" * 22)
+    population_data = sim.simulate_population_dynamics(100, 50)
+    
+    print("Plotting population dynamics... (see plot window)")
+    plt.figure(figsize=(12, 6))
+    plt.plot(population_data)
+    plt.title("Amorphous Population Dynamics")
+    plt.xlabel("Generation")
+    plt.ylabel("Population")
+    plt.grid(True)
+    plt.show()
+
+
+def artistic_generation():
+    """Demonstrate artistic and creative applications."""
+    print("\n=== ARTISTIC GENERATION APPLICATIONS ===")
+    print()
+    
+    class AmorphousArt:
+        def __init__(self, seed=None):
+            self.suite = AmorphousFunctionSuite(seed=seed)
+        
+        def generate_organic_path(self, num_points: int = 300) -> Tuple[List[float], List[float], List[Tuple[float, float, float]]]:
+            """Generate a single organic path with associated colors."""
+            x, y = 0.0, 0.0
+            angle = 0.0
+            
+            points_x, points_y, colors = [], [], []
+
+            for i in range(num_points):
+                # Use amorphous functions to control movement and color
+                angle_dev = self.suite.modulus_transform(x + y + i, np.pi, fluidity=0.7)
+                step_size = self.suite.base_transform(i + 1, 2, fluidity=0.4) / 10.0
+
+                angle += (angle_dev - np.pi / 2) * 0.2
+                x += np.cos(angle) * step_size
+                y += np.sin(angle) * step_size
+                
+                points_x.append(x)
+                points_y.append(y)
+                
+                # Generate colors using anamorphous modulus for rich variation
+                r = self.suite.anamorphic_modulus_transform(x, 1.0, fluidity=0.5, reconstruction=0.8)
+                g = self.suite.anamorphic_modulus_transform(y, 1.0, fluidity=0.5, reconstruction=0.8)
+                b = self.suite.anamorphic_modulus_transform(i, 1.0, fluidity=0.5, reconstruction=0.8)
+                colors.append((np.clip(r,0,1), np.clip(g,0,1), np.clip(b,0,1)))
+                
+            return points_x, points_y, colors
+            
+    # Demonstration
+    print("Generating abstract art with amorphous paths... (see plot window)")
+    
+    art_generator = AmorphousArt(seed=1337)
+    
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_facecolor('black')
+    
+    # Generate and draw multiple paths
+    num_paths = 5
+    for i in range(num_paths):
+        # Re-seed for each path to get different results
+        art_generator = AmorphousArt(seed=1337 + i * 10)
+        px, py, colors = art_generator.generate_organic_path(num_points=200)
+        
+        # Plot path segments with changing colors
+        for j in range(len(px) - 1):
+            ax.plot(px[j:j+2], py[j:j+2], color=colors[j], linewidth=2.5, alpha=0.8)
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.title("Generative Art using Amorphous Mathematics", color='white')
+    plt.show()
+
+
+if __name__ == "__main__":
+    """
+    Run all demonstration functions for the Amorphous Mathematics Library.
+    """
+    # Note: Create a file named 'amorphous_math.py' and place the first
+    # code block (the library implementation) in it for this script to run.
+    
+    basic_usage_examples()
+    cryptographic_applications()
+    scientific_simulation()
+    artistic_generation()
+    
+    print("\n=== DEMONSTRATION COMPLETE ===")
